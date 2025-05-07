@@ -1,48 +1,121 @@
-# Contest_Platorm
+# 🪙 Memecoin Contest Platform
 
-## What is Memecoin Contest?
+A decentralized contest platform built on the **Solana** blockchain where meme tokens battle for dominance. Built with **Rust** and **Anchor**, the platform allows users to stake their favorite tokens in head-to-head contests and win token rewards based on real-time liquidity pool valuations.
 
-Memecoin Contest (name may change) is a simple platform for memecoin contests on the Solana blockchain. 
+---
 
-A memecoin contest is defined by the following parameters:
-2 meme tokens that are “competing,” incl. relevant liquidity pool/contract addresses for the tokens
-An end date (e.g. March 15, 00:00:00 UTC)
-A platform wallet and platform fee percentage
+## 🚀 What is Memecoin Contest?
 
-Suppose a contest has been defined and initialized - say the tokens are token Alicecoin and token Bobcoin.  Users may navigate to our website and interact with a smart contract (“contest contract”) that allows them to deposit either Alicecoins or Bobcoins as a participant.  On this website they can also see the amount and value of Alicecoins or Bobcoins deposited so far. Once they deposit tokens, these tokens are locked until the end date. 
+**Memecoin Contest** (name subject to change) is a smart contract-based competition between two meme tokens (e.g., Alicecoin vs Bobcoin). Users deposit tokens to back one side, and at the end of the contest, the winning side's supporters receive both their deposit and a portion of the losing side’s tokens.
 
-At the end date, the smart contract (or a human) looks up prices of Alicecoin and Bobcoin from the relevant liquidity pools and determines the values of the Alicecoins and Bobcoins in the contest contract.  
+---
 
-To be clear,  Value(Alicecoins) = Price_Alicecoin * Quantity_Alicecoin_in_Contest_Contract
+## 🧩 How It Works
 
-If Value(Alicecoins) > Value(Bobcoins), Alicecoin side wins. 
-If Value(Bobcoins) > Value (Alicecoins), Bobcoin side wins. 
+### Contest Parameters
+- Two competing tokens (`Alicecoin`, `Bobcoin`)
+- Contest end time (e.g., March 15, 00:00 UTC)
+- Platform wallet and fee percentage (e.g., 2%)
 
-Then, a redemption phase begins:
+### Contest Lifecycle
 
-A 2% fee of ALL tokens in the contest contract gets sent to the platform wallet. 
+1. **Initialization**
+   - Admin sets up a new contest with token mints, LP sources, caps, and duration.
 
-If Alicecoin side wins, Alicecoin depositors may withdraw their Alicecoins from the smart contract. They also get an allocated fraction (more detail later) of all Bobcoins deposited. Bobcoin depositors lose: they get nothing..
+2. **Participation**
+   - Users deposit tokens to support one of the two sides.
+   - Each deposit is capped per contest rules.
+   - A **bet coefficient** is calculated:
+     ```
+     bet = SOL_value_of_deposit * (1 + value_opposite_side) / (1 + value_same_side)
+     ```
 
-(Conversely, if Bobcoin side wins, Bobcoin depositors may withdraw their Bobcoins from the smart contract. They also get an allocated fraction of all Alicecoins deposited, as rewards. Alicecoin depositors lose: they get nothing.)
+3. **End & Evaluation**
+   - Token prices are fetched via token vaults (LPs).
+   - Values are calculated:
+     ```
+     Value = Price * Quantity
+     ```
+   - The higher value side wins.
 
-## Contest Lifecycle
-### Initialization: 
+4. **Redemption Phase**
+   - 2% of all tokens go to the platform wallet.
+   - Winning side:
+     - Withdraws their tokens (minus fee)
+     - Claims a share of the losing side’s tokens proportionally to their bet
 
-- Memecoin contest is defined with meme tokens, end date, maximum single deposit, and platform wallet as parameters. 
-- Contest contract is activated 
+5. **Final Withdrawal**
+   - Admin may withdraw unclaimed tokens after a wait period.
 
-### Contest Period:
+---
 
-- Website visitors/Users deposit tokens into the contest contract. Typically that means they will deposit on one side of the contract - either Alicecoin or Bobcoin. Each single deposit transaction is capped by the maximum single deposit parameter. 
-Once a user deposits his tokens, he is assigned a “bet coefficient” defined as 
+## 🛠 Features
 
-- bet coefficient :=  sol_value_of_deposit * (1+ opposite-side_value in contest contract) / (1+ deposit_side_value in contest contract)
+- Built with Anchor framework on Solana
+- Dynamic LP integration (no reliance on Pyth oracles)
+- Secure token vault management
+- Fair reward calculation using bet coefficient
+- Contest lifecycle management (initiate, deposit, finalize, claim)
+- Admin update for fee and ownership
 
-- Webpage will display the live value of all Alicecoins and Bobcoins in the contest contract. It will do this by looking up the price from the relevant liquidity pool and will use a SOL:USD converter.
+---
 
-### Redemption:
+## 📦 Program Architecture
 
-- Redemption phase is triggered when end date is reached
-- 2% of all tokens in contest contract are sent to platform wallet
-- Winning side is able to withdraw deposit side tokens they deposited (exactly the amount they deposited minus the 2% fee). They also can withdraw, as rewards, a number of opposite-side-tokens proportional to their bet coefficient.
+### 🧠 Core Modules
+
+- **lib.rs** – Entry point, routing instructions
+- **state.rs** – Contest, global state, and user data models
+- **instructions.rs** – All business logic for contest creation, participation, claiming, and finalization
+- **constants.rs** – Seeds and constants used across program
+- **errors.rs** – Custom error codes for validation and constraints
+
+### 🧮 Bet Formula
+
+The smart contract determines winners and allocations based on a custom betting formula:
+```rust
+bet = sol_value_of_deposit * (1 + value_opposite_side) / (1 + value_same_side)
+```
+
+### 🔐 Winner Determination
+
+At contest end:
+
+- Total value of both token pools is compared
+- Winner is declared based on higher value
+- Ties resolved randomly using timestamp parity
+
+### 🔐 🧪 Running Locally
+
+Install the required Solana and Anchor dependencies:
+```
+anchor build
+anchor deploy
+```
+You can also run tests and validate local logic using:
+```
+anchor test
+```
+
+### 📘 Example Logic (Simplified)
+
+```
+if Value(Alicecoin) > Value(Bobcoin) {
+    winner = Alicecoin;
+    reward = BobcoinPool * (user_bet / total_alice_bets);
+} else {
+    winner = Bobcoin;
+    reward = AlicecoinPool * (user_bet / total_bob_bets);
+}
+```
+### ⚙️ Configurable Parameters
+
+- Contest duration
+- Maximum deposit per user
+- Platform fee percentage
+- Token vaults for price tracking
+- Admin address
+
+
+
+
